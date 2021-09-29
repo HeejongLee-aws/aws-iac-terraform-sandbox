@@ -6,6 +6,7 @@ on:
       - v*
 jobs:
   build:
+    environment: AWS
     runs-on: ubuntu-latest
     env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
