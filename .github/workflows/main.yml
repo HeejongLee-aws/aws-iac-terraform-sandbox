@@ -1,0 +1,61 @@
+name: Sandbox Environment Build
+
+on:
+  create:
+    tags:
+      - v*
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+ 
+    # Steps
+
+    steps:
+    - uses: actions/checkout@v2
+      
+    - name: Install aws-iam-authenticator
+      run: |
+        echo Installing aws-iam-authenticator...
+        mkdir ~/aws
+        curl -o ~/aws/aws-iam-authenticator \
+        "https://amazon-eks.s3.us-west-2.amazonaws.com/\
+        1.16.8/2020-04-16/bin/linux/amd64/aws-iam-authenticator"
+        chmod +x ~/aws/aws-iam-authenticator
+        sudo cp ~/aws/aws-iam-authenticator /usr/local/bin/aws-iam-authenticator
+        echo "::add-path::~/aws"
+        
+    - name: Debug
+      run: |
+        echo $PATH
+        ls ~/aws
+        aws-iam-authenticator
+    # Apply Terraform
+
+    - uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: 0.13.5
+        
+    - name: Terraform fmt
+      run: terraform fmt
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Validate
+      run: terraform validate -no-color
+
+    - name: Terraform Plan
+      run: terraform plan -no-color
+    
+    - name: Terraform Apply
+      run: terraform apply -no-color -auto-approve 
+
+    # Comment
+    - name: Upload kubeconfig file
+      uses: actions/upload-artifact@v2
+      with:
+        name: kubeconfig
+        path: kubeconfig
